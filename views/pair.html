@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALMEER XMD — Pairing Code</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:#0d1117;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;padding:20px}
+    .card{background:#161b22;border:1px solid #30363d;border-radius:20px;padding:36px 28px;width:100%;max-width:420px;text-align:center}
+    .icon{font-size:52px;margin-bottom:12px}
+    h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#25d366,#128c7e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+    .sub{color:#8b949e;font-size:13px;margin-bottom:28px}
+    .input-row{display:flex;gap:10px;margin-bottom:10px}
+    input{flex:1;background:#0d1117;border:1.5px solid #30363d;border-radius:10px;padding:14px 16px;color:#fff;font-size:15px;outline:none;transition:border-color .2s}
+    input:focus{border-color:#25d366}
+    input::placeholder{color:#8b949e}
+    input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+    button{background:linear-gradient(135deg,#25d366,#128c7e);border:none;border-radius:10px;padding:14px 22px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+    button:hover{opacity:.85}
+    button:disabled{opacity:.4;cursor:not-allowed}
+    .hint{color:#8b949e;font-size:12px;margin-bottom:24px;text-align:left}
+    .result-box{margin-top:16px;min-height:50px}
+    .code-wrap{background:#0d1117;border:2px solid #25d366;border-radius:14px;padding:22px}
+    .code-label{color:#8b949e;font-size:12px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+    .code-val{font-size:34px;font-weight:900;letter-spacing:8px;color:#25d366;cursor:pointer}
+    .copy-tip{color:#8b949e;font-size:11px;margin-top:8px}
+    .note{background:#1a4731;border:1px solid #25d366;border-radius:10px;padding:12px;margin-top:14px;font-size:12px;color:#25d366;text-align:left;line-height:1.7}
+    .steps{background:#0d1117;border-radius:12px;padding:18px;margin-top:20px;text-align:left}
+    .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:13px;color:#c9d1d9}
+    .step:last-child{margin-bottom:0}
+    .num{background:#25d366;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;margin-top:1px}
+    .err{color:#f85149;font-size:13px;margin-top:10px}
+    .loading{color:#58a6ff;font-size:13px;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .spinner{width:16px;height:16px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .back{display:block;margin-top:20px;color:#8b949e;font-size:12px;text-decoration:none;text-align:center}
+    .back:hover{color:#25d366}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🔑</div>
+    <h1>ALMEER XMD</h1>
+    <p class="sub">Get your pairing code below</p>
+    <div class="input-row">
+      <input type="number" id="number" placeholder="254712345678" />
+      <button id="btn" onclick="requestCode()">Get Code</button>
+    </div>
+    <p class="hint">Enter number with country code, no + or spaces</p>
+    <div class="result-box" id="result"></div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><span>Enter your WhatsApp number and click <b>Get Code</b></span></div>
+      <div class="step"><div class="num">2</div><span>Open WhatsApp → tap ⋮ → <b>Linked Devices</b></span></div>
+      <div class="step"><div class="num">3</div><span>Tap <b>Link with phone number</b></span></div>
+      <div class="step"><div class="num">4</div><span>Enter the code — session ID sent to your WhatsApp ✅</span></div>
+    </div>
+    <a href="/" class="back">← Back to Home</a>
+  </div>
+  <script>
+    async function requestCode() {
+      const num = document.getElementById('number').value.replace(/[^0-9]/g, '').trim();
+      const btn = document.getElementById('btn');
+      const res = document.getElementById('result');
+      if (!num) { res.innerHTML = '<p class="err">❗ Enter your WhatsApp number.</p>'; return; }
+      if (num.length < 10) { res.innerHTML = '<p class="err">❌ Invalid number — include country code</p>'; return; }
+      btn.disabled = true; btn.textContent = 'Wait...';
+      res.innerHTML = '<div class="loading"><div class="spinner"></div>Requesting pairing code...</div>';
+      try {
+        const r    = await fetch(`/api/pair?number=${num}`);
+        const data = await r.json();
+        if (data.error) {
+          res.innerHTML = `<p class="err">❌ ${data.error}</p>`;
+        } else {
+          const code = data.code || 'Error';
+          res.innerHTML = `
+            <div class="code-wrap">
+              <p class="code-label">Your Pairing Code</p>
+              <div class="code-val" id="codeVal" onclick="copyCode('${code}')">${code}</div>
+              <p class="copy-tip">👆 Tap to copy</p>
+            </div>
+            <div class="note">✅ Enter this code in WhatsApp<br>📩 After linking, session ID sent to your WhatsApp automatically!</div>`;
+        }
+      } catch (e) {
+        res.innerHTML = '<p class="err">❌ Connection error. Please try again.</p>';
+      }
+      btn.disabled = false; btn.textContent = 'Get Code';
+    }
+    function copyCode(code) {
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('codeVal').textContent = 'COPIED ✓';
+        setTimeout(() => { document.getElementById('codeVal').textContent = code; }, 1500);
+      });
+    }
+    document.getElementById('number').addEventListener('keydown', (e) => { if (e.key === 'Enter') requestCode(); });
+  </script>
+</body>
+                          </html>
